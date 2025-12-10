@@ -43,7 +43,7 @@ Software: Docker 20.10+, sudo access
 
 ### Step 2: Clone & Setup Lab (2 min)
 
-```Create & enter lab directory```
+Create & enter lab directory
 
 ```git clone https://github.com/Synnefo-Solutions/Cloudmints.git ```
 
