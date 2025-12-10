@@ -1,0 +1,2 @@
+Contact CEO: ceo@cloudmints.in
+Next backup: see /opt/backup.sh (runs every 2 minutes as root)

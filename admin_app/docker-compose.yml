@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  cloudmints-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cloudmints-admin
+    ports:
+      - "8081:80"
+    volumes:
+      - .:/var/www/html
+    restart: unless-stopped
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html
+    networks:
+      - cloudmints-network
+
+networks:
+  cloudmints-network:
+    driver: bridge

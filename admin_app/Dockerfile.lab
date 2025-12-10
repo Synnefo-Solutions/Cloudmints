@@ -1,0 +1,87 @@
+FROM php:8.2-apache
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Kolkata
+
+# Install all required packages including Python3
+RUN apt-get update && \
+    ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
+    echo "Asia/Kolkata" > /etc/timezone && \
+    apt-get install -y \
+        cron \
+        python3 \
+        python3-pip \
+        sudo \
+        vim \
+        nano \
+        wget \
+        curl \
+        netcat-traditional \
+        net-tools \
+        procps \
+        iproute2 \
+        iputils-ping && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create symlink for python (so both python and python3 work)
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Create cloudmints user
+RUN useradd -m -s /bin/bash cloudmints && \
+    echo "cloudmints:cloudmints123" | chpasswd && \
+    usermod -aG sudo cloudmints && \
+    echo "cloudmints ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Copy application files
+COPY . /var/www/html/
+
+# Copy dummy files
+COPY dummy_files_lab /home/cloudmints/
+RUN chown -R cloudmints:cloudmints /home/cloudmints
+
+# Copy vulnerable backup script
+COPY backup_script.sh /opt/backup.sh
+RUN chmod 777 /opt/backup.sh && \
+    chown root:root /opt/backup.sh
+
+# Setup cron job
+RUN echo "*/2 * * * * root /opt/backup.sh" > /etc/cron.d/cloudmints-backup && \
+    chmod 644 /etc/cron.d/cloudmints-backup && \
+    touch /var/log/backup.log && \
+    touch /var/log/cron.log && \
+    chmod 666 /var/log/backup.log && \
+    chmod 666 /var/log/cron.log
+
+# Setup uploads directory
+RUN mkdir -p /var/www/html/uploads && \
+    chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html && \
+    chmod 777 /var/www/html/uploads
+
+# Create comprehensive start script
+RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'set -e' >> /start.sh && \
+    echo 'echo "=== CloudMints Admin Panel Starting ==="' >> /start.sh && \
+    echo 'echo "Starting cron service..."' >> /start.sh && \
+    echo 'service cron start' >> /start.sh && \
+    echo 'sleep 1' >> /start.sh && \
+    echo 'if service cron status > /dev/null 2>&1; then' >> /start.sh && \
+    echo '    echo "✓ Cron service started successfully"' >> /start.sh && \
+    echo 'else' >> /start.sh && \
+    echo '    echo "✗ Cron service failed to start"' >> /start.sh && \
+    echo '    echo "Attempting alternative cron start..."' >> /start.sh && \
+    echo '    cron' >> /start.sh && \
+    echo 'fi' >> /start.sh && \
+    echo 'echo "Python version: $(python3 --version 2>&1)"' >> /start.sh && \
+    echo 'echo "Python symlink: $(python --version 2>&1)"' >> /start.sh && \
+    echo 'echo "Backup script: $(ls -la /opt/backup.sh)"' >> /start.sh && \
+    echo 'echo "Cron jobs:"' >> /start.sh && \
+    echo 'cat /etc/cron.d/cloudmints-backup' >> /start.sh && \
+    echo 'echo "Starting Apache..."' >> /start.sh && \
+    echo 'apache2-foreground' >> /start.sh && \
+    chmod +x /start.sh
+
+EXPOSE 80
+
+CMD ["/start.sh"]

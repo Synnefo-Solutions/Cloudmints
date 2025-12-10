@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  cloudmints-web:
+    build: .
+    container_name: cloudmints-webapp
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    networks:
+      - cloudmints-network
+
+networks:
+  cloudmints-network:
+    driver: bridge

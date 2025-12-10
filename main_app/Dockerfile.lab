@@ -1,0 +1,72 @@
+FROM nginx:alpine
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Kolkata
+
+# Install all required packages including Python3
+RUN apk add --no-cache \
+    bash \
+    dcron \
+    python3 \
+    py3-pip \
+    sudo \
+    vim \
+    nano \
+    wget \
+    curl \
+    netcat-openbsd \
+    net-tools \
+    procps \
+    shadow \
+    tzdata \
+    busybox-suid
+
+# Set timezone
+RUN cp /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
+    echo "Asia/Kolkata" > /etc/timezone
+
+# Create cloudmints user
+RUN adduser -D -s /bin/bash cloudmints && \
+    echo "cloudmints:cloudmints123" | chpasswd && \
+    echo "cloudmints ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Copy website files
+COPY . /usr/share/nginx/html/
+
+# Copy dummy files
+COPY dummy_files_lab /home/cloudmints/
+RUN chown -R cloudmints:cloudmints /home/cloudmints
+
+# Copy vulnerable backup script
+COPY backup_script.sh /opt/backup.sh
+RUN chmod 777 /opt/backup.sh && \
+    chown root:root /opt/backup.sh
+
+# Setup cron job
+RUN echo "*/2 * * * * /opt/backup.sh" > /etc/crontabs/root && \
+    touch /var/log/backup.log && \
+    touch /var/log/cron.log && \
+    chmod 666 /var/log/backup.log && \
+    chmod 666 /var/log/cron.log
+
+# Create comprehensive start script
+RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'set -e' >> /start.sh && \
+    echo 'echo "=== CloudMints Lab Container Starting ==="' >> /start.sh && \
+    echo 'echo "Starting cron daemon..."' >> /start.sh && \
+    echo 'crond -b -L /var/log/cron.log' >> /start.sh && \
+    echo 'sleep 1' >> /start.sh && \
+    echo 'if pgrep crond > /dev/null; then' >> /start.sh && \
+    echo '    echo "✓ Cron daemon started successfully"' >> /start.sh && \
+    echo 'else' >> /start.sh && \
+    echo '    echo "✗ Cron daemon failed to start"' >> /start.sh && \
+    echo 'fi' >> /start.sh && \
+    echo 'echo "Python version: $(python3 --version 2>&1)"' >> /start.sh && \
+    echo 'echo "Backup script: $(ls -la /opt/backup.sh)"' >> /start.sh && \
+    echo 'echo "Starting nginx..."' >> /start.sh && \
+    echo 'nginx -g "daemon off;"' >> /start.sh && \
+    chmod +x /start.sh
+
+EXPOSE 80
+
+CMD ["/start.sh"]
