@@ -206,24 +206,8 @@ Download these resources to help you succeed:
 
 
 
-
-## 🤝 Contributing & License
-
-Fork repository
-
-Create feature branch: git checkout -b feature-name
-
-Commit: git commit -m "Add feature"
-
-Push: git push origin feature-name
-
-Open Pull Request
-
-
-
 **⚠️ Educational use only! Do not deploy in production.**
 
 ---
 
 **Synnefo Solutions | December 2025**  
-`<p align="center"><img src="https://img.shields.io/badge/Docker-Ready-blue?style=flat&logo=docker" alt="Docker Ready"/></p>`
